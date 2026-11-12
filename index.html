@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Esercitazione Completa di Latino</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel per compilare JSX nel browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes popFade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes popUp { from { opacity: 0; transform: translateY(28px) scale(.98); } to { opacity: 1; transform: none; } }
+    .pop-overlay { animation: popFade .25s ease-out both; }
+    .pop-card { animation: popUp .35s cubic-bezier(.2,.8,.2,1) both; }
+    .safe-bottom { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+    select.ex5-select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .75rem center; padding-right: 2.25rem; }
+  </style>
+</head>
+<body class="bg-[#FAF8F5] text-stone-800">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+
+    // Componente wrapper per le icone Lucide
+    const Icon = ({ name, className = "w-4 h-4" }) => {
+      const ref = React.useRef(null);
+      useEffect(() => {
+        if (ref.current && window.lucide) {
+          ref.current.innerHTML = '';
+          const i = document.createElement('i');
+          i.setAttribute('data-lucide', name);
+          i.className = className;
+          ref.current.appendChild(i);
+          window.lucide.createIcons({ root: ref.current });
+        }
+      }, [name, className]);
+      return <span ref={ref} className="inline-flex items-center justify-center" />;
+    };
+
+    // ============================================================================
+    // URL DEL TUO GOOGLE APPS SCRIPT GIÀ INTEGRATO
+    // ============================================================================
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDF_uyJVXnCNURUrYqrCixupOWJlw1bcJqdhOa3FqpitQw6cUZnRDFEVBRBj17Lz0G/exec';
+
+    const CASI = ['Nominativo', 'Genitivo', 'Dativo', 'Accusativo', 'Vocativo', 'Ablativo'];
+
+    const EX1_DATA = {
+      legatus: {
+        lemma: 'LEGATUS, -I',
+        info: 'maschile, II declinazione',
+        significato: 'ambasciatore, legato',
+        rows: [
+          { caso: 'Nominativo', sing: 'legatus', plur: 'legati' },
+          { caso: 'Genitivo', sing: 'legati', plur: 'legatorum' },
+          { caso: 'Dativo', sing: 'legato', plur: 'legatis' },
+          { caso: 'Accusativo', sing: 'legatum', plur: 'legatos' },
+          { caso: 'Vocativo', sing: 'legate', plur: 'legati' },
+          { caso: 'Ablativo', sing: 'legato', plur: 'legatis' }
+        ]
+      },
+      virus: {
+        lemma: 'VIRUS, -I',
+        info: 'neutro, II declinazione',
+        significato: 'veleno',
+        rows: [
+          { caso: 'Nominativo', sing: 'virus', plur: 'vira' },
+          { caso: 'Genitivo', sing: 'viri', plur: 'virorum' },
+          { caso: 'Dativo', sing: 'viro', plur: 'viris' },
+          { caso: 'Accusativo', sing: 'virus', plur: 'vira' },
+          { caso: 'Vocativo', sing: 'virus', plur: 'vira' },
+          { caso: 'Ablativo', sing: 'viro', plur: 'viris' }
+        ]
+      },
+      nota: 'Ricorda: i nomi neutri hanno nominativo, accusativo e vocativo sempre uguali. Al plurale terminano in -a.'
+    };
+
+    const EX2_DATA = [
+      {
+        id: 'terrebimini',
+        parola: 'terrebimini',
+        categoria: 'verbo',
+        modo: 'Indicativo',
+        tempo: 'Futuro',
+        diatesi: 'Passivo',
+        persona: '2ª plurale',
+        paradigma: ['terreo', 'terres', 'terrui', 'territum', 'terrere'],
+        analisiSoluzione: 'ind. fut. pass. II plur. < terreo, terres, terrui, territum, terrere',
+        traduzioneSoluzione: 'sarete spaventati',
+        acceptedTraduzioni: ['sarete spaventati', 'sarete spaventate', 'verrete spaventati']
+      },
+      {
+        id: 'faci',
+        parola: 'faci',
+        categoria: 'verbo',
+        modo: 'Imperativo',
+        tempo: 'Presente',
+        diatesi: 'Attivo',
+        persona: '2ª singolare',
+        paradigma: ['facio', 'facis', 'feci', 'factum', 'facere'],
+        analisiSoluzione: 'imper. pres. att. II sing. < facio, facis, feci, factum, facere (forma corretta: fac)',
+        traduzioneSoluzione: "fa'!",
+        acceptedTraduzioni: ["fa'!", "fa'", 'fa', 'fai!', 'fai'],
+        notaExtra: 'Nella lingua latina classica la forma regolare dell’imperativo presente II singolare di facio è tronca: fac.'
+      },
+      {
+        id: 'statim',
+        parola: 'statim',
+        categoria: 'avverbio',
+        analisiSoluzione: 'avv.',
+        traduzioneSoluzione: 'subito',
+        acceptedTraduzioni: ['subito', 'immediatamente']
+      },
+      {
+        id: 'ac',
+        parola: 'ac',
+        categoria: 'congiunzione',
+        tipoCong: 'Coordinante',
+        analisiSoluzione: 'cong. coord. copulativa',
+        traduzioneSoluzione: 'e',
+        acceptedTraduzioni: ['e', 'ed']
+      },
+      {
+        id: 'colite',
+        parola: 'colite',
+        categoria: 'verbo',
+        modo: 'Imperativo',
+        tempo: 'Presente',
+        diatesi: 'Attivo',
+        persona: '2ª plurale',
+        paradigma: ['colo', 'colis', 'colui', 'cultum', 'colere'],
+        analisiSoluzione: 'imper. pres. att. II plur. < colo, colis, colui, cultum, colere',
+        traduzioneSoluzione: 'coltivate!',
+        acceptedTraduzioni: ['coltivate!', 'coltivate', 'onorate!', 'onorate']
+      },
+      {
+        id: 'indutiis',
+        parola: 'indutiis',
+        categoria: 'nome',
+        caso: 'Ablativo',
+        genere: 'Femminile',
+        numero: 'Plurale',
+        analisiSoluzione: 'nome V decl. (o I decl. pluralia tantum), abl. femm. plur. < indutiae, -arum',
+        traduzioneSoluzione: 'con le tregue',
+        acceptedTraduzioni: ['con le tregue', 'alle tregue', 'per le tregue', 'mediante le tregue'],
+        notaExtra: 'Nota sulle soluzioni: il testo delle soluzioni riporta "nome V decl., abl. femm. plur. < indutiae, -arum" (il lemma indutiae, -arum appartiene in realtà alla I declinazione, pluralia tantum).'
+      },
+      {
+        id: 'praesertim',
+        parola: 'praesertim',
+        categoria: 'avverbio',
+        analisiSoluzione: 'avv.',
+        traduzioneSoluzione: 'soprattutto',
+        acceptedTraduzioni: ['soprattutto', 'specialmente', 'in particolare']
+      },
+      {
+        id: 'deliciae',
+        parola: 'deliciae',
+        categoria: 'nome',
+        caso: 'Nominativo',
+        genere: 'Femminile',
+        numero: 'Plurale',
+        analisiSoluzione: 'nome I decl., nom. femm. plur. < deliciae, -arum',
+        traduzioneSoluzione: 'le delizie',
+        acceptedTraduzioni: ['le delizie', 'delizie']
+      },
+      {
+        id: 'discemus',
+        parola: 'discemus',
+        categoria: 'verbo',
+        modo: 'Indicativo',
+        tempo: 'Futuro',
+        diatesi: 'Attivo',
+        persona: '1ª plurale',
+        paradigma: ['disco', 'discis', 'didici', '—', 'discere'],
+        supinoAssente: true,
+        analisiSoluzione: 'ind. fut. att. I plur. < disco, discis, didici, —, discere',
+        traduzioneSoluzione: 'impareremo',
+        acceptedTraduzioni: ['impareremo', 'apprenderemo']
+      },
+      {
+        id: 'vince',
+        parola: 'vince',
+        categoria: 'verbo',
+        modo: 'Imperativo',
+        tempo: 'Presente',
+        diatesi: 'Attivo',
+        persona: '2ª singolare',
+        paradigma: ['vinco', 'vincis', 'vici', 'victum', 'vincere'],
+        analisiSoluzione: 'imper. pres. att. II sing. < vinco, vincis, vici, victum, vincere',
+        traduzioneSoluzione: 'vinci!',
+        acceptedTraduzioni: ['vinci!', 'vinci']
+      }
+    ];
+
+    const PARADIGMA_LABELS = [
+      { idx: 0, label: '1ª sing. pres. ind.' },
+      { idx: 1, label: '2ª sing. pres. ind.' },
+      { idx: 2, label: 'Perfetto' },
+      { idx: 3, label: 'Supino' },
+      { idx: 4, label: 'Infinito' }
+    ];
+
+    const MODI_OPTIONS = ['Indicativo', 'Infinito', 'Imperativo'];
+    const TEMPI_OPTIONS = ['Presente', 'Imperfetto', 'Futuro'];
+    const DIATESI_OPTIONS = ['Attivo', 'Passivo'];
+    const PERSONE_OPTIONS = ['1ª singolare', '2ª singolare', '3ª singolare', '1ª plurale', '2ª plurale', '3ª plurale'];
+    const CONG_OPTIONS = ['Coordinante', 'Avversativa', 'Disgiuntiva', 'Dichiarativa', 'Conclusiva', 'Correlativa'];
+    const GENERE_OPTIONS = ['Maschile', 'Femminile'];
+    const NUMERO_OPTIONS = ['Singolare', 'Plurale'];
+
+    const EX3_DATA = [
+      { id: 'dove', it: 'dove?', la: 'ubi?', accepted: ['ubi?', 'ubi'] },
+      { id: 'veniva', it: 'veniva', la: 'veniebat', accepted: ['veniebat'] },
+      { id: 'pero', it: 'però', la: 'tamen', accepted: ['tamen'] },
+      { id: 'talvolta', it: 'talvolta', la: 'interdum', accepted: ['interdum'] },
+      { id: 'pertanto', it: 'pertanto', la: 'igitur', accepted: ['igitur'] },
+      { id: 'saranno', it: 'saranno', la: 'erunt', accepted: ['erunt'] },
+      { id: 'di', it: "di'!", la: 'dic!', accepted: ['dic!', 'dic'] },
+      { id: 'fuggirete', it: 'fuggirete', la: 'fugietis', accepted: ['fugietis'] },
+      { id: 'sarai_pianto', it: 'sarai pianto', la: 'fleberis', accepted: ['fleberis'] },
+      { id: 'verro_venerato', it: 'verrò venerato', la: 'venerabor', accepted: ['venerabor'] }
+    ];
+
+    const EX4_DATA = [
+      {
+        id: 'ago',
+        titolo: '1. II persona singolare passiva di AGO',
+        paradigma: 'ago, agis, egi, actum, agere = condurre, fare',
+        nota: 'Ageris si scrive allo stesso modo al presente e al futuro, ma cambia la quantità della vocale: presente ăgeris, futuro agēris. La quantità distingue le due forme.',
+        tempi: [
+          { tempo: 'Presente', latinoDisplay: 'ageris', acceptedLatino: ['ageris', 'ăgeris'], traduzione: 'sei condotto', acceptedTraduzione: ['sei condotto', 'sei condotta', 'vieni condotto'] },
+          { tempo: 'Imperfetto', latinoDisplay: 'agebaris', acceptedLatino: ['agebaris'], traduzione: 'eri condotto', acceptedTraduzione: ['eri condotto', 'eri condotta', 'venivi condotto'] },
+          { tempo: 'Futuro', latinoDisplay: 'ageris (con -ē- lunga)', acceptedLatino: ['ageris', 'agēris', 'ageris (con -ē- lunga)', 'ageris (con -e- lunga)'], traduzione: 'sarai condotto', acceptedTraduzione: ['sarai condotto', 'sarai condotta', 'verrai condotto'] }
+        ]
+      },
+      {
+        id: 'vulnero',
+        titolo: '2. III persona plurale attiva di VULNERO',
+        paradigma: 'vulnero, vulneras, vulneravi, vulneratum, vulnerare = ferire',
+        tempi: [
+          { tempo: 'Presente', latinoDisplay: 'vulnerant', acceptedLatino: ['vulnerant'], traduzione: 'feriscono', acceptedTraduzione: ['feriscono'] },
+          { tempo: 'Imperfetto', latinoDisplay: 'vulnerabant', acceptedLatino: ['vulnerabant'], traduzione: 'ferivano', acceptedTraduzione: ['ferivano'] },
+          { tempo: 'Futuro', latinoDisplay: 'vulnerabunt', acceptedLatino: ['vulnerabunt'], traduzione: 'feriranno', acceptedTraduzione: ['feriranno'] }
+        ]
+      },
+      {
+        id: 'vincio',
+        titolo: '3. III persona singolare passiva di VINCIO (IV coniugazione)',
+        paradigma: 'vincio, vincis, vinxi, vinctum, vincire = legare',
+        tempi: [
+          { tempo: 'Presente', latinoDisplay: 'vincitur', acceptedLatino: ['vincitur'], traduzione: 'è legato', acceptedTraduzione: ['è legato', 'è legata', 'viene legato'] },
+          { tempo: 'Imperfetto', latinoDisplay: 'vinciebatur', acceptedLatino: ['vinciebatur'], traduzione: 'era legato', acceptedTraduzione: ['era legato', 'era legata', 'veniva legato'] },
+          { tempo: 'Futuro', latinoDisplay: 'vincietur', acceptedLatino: ['vincietur'], traduzione: 'sarà legato', acceptedTraduzione: ['sarà legato', 'sarà legata', 'verrà legato'] }
+        ]
+      }
+    ];
+
+    const EX5_DATA = {
+      testoConsegna: 'Allora le sentinelle, davanti al bosco, faranno un agguato alle padrone con grande impegno: non solo le ragazze, ma anche i contadini della fattoria saranno messi in fuga a causa delle frecce.',
+      traduzioneModello: 'Tum vigiliae ante silvam dominis magna cum peritia insidias facient: non solum puellae, sed etiam villae agricolae propter sagittas fugabuntur.',
+      notaVigiliae: 'Vigiliae è il nominativo plurale di vigilia, -ae e significa «le sentinelle», come richiesto.',
+      tokens: [
+        { id: 't1', gloss: 'Allora', correct: 'tum', options: ['tum', 'tam', 'enim', 'praesertim', 'statim'] },
+        { id: 't2', gloss: 'le sentinelle', correct: 'vigiliae', options: ['vigiliae', 'vigilias', 'vigiliarum', 'vigiliis', 'vigilia'] },
+        { id: 't3', gloss: 'davanti a', correct: 'ante', options: ['ante', 'post', 'sub', 'in', 'per'] },
+        { id: 't4', gloss: 'al bosco', correct: 'silvam', options: ['silvam', 'silva', 'silvae', 'silvis', 'silvarum'] },
+        { id: 't5', gloss: 'alle padrone', correct: 'dominis', options: ['dominis', 'dominae', 'dominas', 'dominarum', 'dominos'] },
+        { id: 't6', gloss: 'con grande impegno', correct: 'magna cum peritia', options: ['magna peritia', 'cum magna peritia', 'magna cum peritia', 'per magnam peritiam', 'ob magnam peritiam'] },
+        { id: 't7', gloss: 'un agguato', correct: 'insidias', options: ['insidias', 'insidiae', 'insidiis', 'insidiarum', 'insidia'] },
+        { id: 't8', gloss: 'faranno', correct: 'facient', options: ['facient', 'faciunt', 'faciebant', 'fecerunt', 'facientur'], punctuationAfter: ':' },
+        { id: 't9', gloss: 'non solo', correct: 'non solum', options: ['non solum', 'non iam', 'nonnumquam', 'nondum', 'neque'] },
+        { id: 't10', gloss: 'le ragazze', correct: 'puellae', options: ['puellae', 'puellas', 'puellarum', 'puellis', 'puella'] },
+        { id: 't11', gloss: ', ma anche', correct: ', sed etiam', options: [', sed etiam', ', sed tamen', ', etsi', ', namque', ', igitur'] },
+        { id: 't12', gloss: 'della fattoria', correct: 'villae', options: ['villae', 'villam', 'villa', 'villis', 'villarum'] },
+        { id: 't13', gloss: 'i contadini', correct: 'agricolae', options: ['agricolae', 'agricolas', 'agricolarum', 'agricolis', 'agricola'] },
+        { id: 't14', gloss: 'a causa di', correct: 'propter', options: ['propter', 'prope', 'praeter', 'contra', 'inter'] },
+        { id: 't15', gloss: 'delle frecce', correct: 'sagittas', options: ['sagittas', 'sagittae', 'sagittis', 'sagittarum', 'sagitta'] },
+        { id: 't16', gloss: 'saranno messi in fuga', correct: 'fugabuntur', options: ['fugabuntur', 'fugabunt', 'fugantur', 'fugabantur', 'fugient'], punctuationAfter: '.' }
+      ],
+      analisiTermini: [
+        { latino: 'tum', analisi: 'avverbio', traduzione: 'allora' },
+        { latino: 'vigiliae', analisi: 'nome I decl., nom. femm. plur.', traduzione: 'le sentinelle' },
+        { latino: 'ante', analisi: 'preposizione + accusativo', traduzione: 'davanti a' },
+        { latino: 'silvam', analisi: 'nome I decl., acc. femm. sing.', traduzione: 'il bosco' },
+        { latino: 'dominis', analisi: 'nome II decl., dat. femm. plur.', traduzione: 'alle padrone' },
+        { latino: 'magna cum peritia', analisi: 'ablativo di modo con cum interposto', traduzione: 'con grande impegno' },
+        { latino: 'insidias', analisi: 'nome I decl., acc. femm. plur.', traduzione: 'un agguato' },
+        { latino: 'facient', analisi: 'ind. fut. att. III plur. ‹ facio, facis, feci, factum, facere', traduzione: 'faranno' },
+        { latino: 'non solum', analisi: 'locuzione avverbiale', traduzione: 'non solo' },
+        { latino: 'puellae', analisi: 'nome I decl., nom. femm. plur.', traduzione: 'le ragazze' },
+        { latino: 'sed etiam', analisi: 'congiunzione', traduzione: 'ma anche' },
+        { latino: 'agricolae', analisi: 'nome I decl., nom. masc. plur.', traduzione: 'i contadini' },
+        { latino: 'propter', analisi: 'preposizione + accusativo', traduzione: 'a causa di' },
+        { latino: 'sagittas', analisi: 'nome I decl., acc. femm. plur.', traduzione: 'le frecce' },
+        { latino: 'fugabuntur', analisi: 'ind. fut. pass. III plur. ‹ fugo, fugas, fugavi, fugatum, fugare', traduzione: 'saranno messi in fuga' }
+      ]
+    };
+
+    const EX6_DATA = [
+      { id: 'semplificazione', numero: 1, fenomeno: 'Semplificazione', acceptedFenomeno: ['semplificazione'], prefisso: 'dis', verboBase: 'mitto', composto: 'dimitto', esempioCompleto: 'dis + mitto → dimitto', spiegazione: 'La consonante del prefisso viene semplificata.' },
+      { id: 'assimilazione', numero: 2, fenomeno: 'Assimilazione', acceptedFenomeno: ['assimilazione'], prefisso: 'ad', verboBase: 'sumo', composto: 'assumo', esempioCompleto: 'ad + sumo → assumo', spiegazione: 'La consonante finale del prefisso si assimila alla consonante iniziale del verbo.' },
+      { id: 'apofonia', numero: 3, fenomeno: 'Apofonia', acceptedFenomeno: ['apofonia'], prefisso: 'ad', verboBase: 'capio', composto: 'accipio', esempioCompleto: 'ad + capio → accipio', spiegazione: 'La vocale della radice del verbo cambia da a a i.' }
+    ];
+
+    function normalizeStr(str) {
+      if (!str) return '';
+      return str.toLowerCase().trim().replace(/[’']/g, "'").replace(/\s+/g, ' ');
+    }
+
+    function normalizeLatinStrict(str) {
+      if (!str) return '';
+      return str.toLowerCase().trim()
+        .replace(/[ăā]/g, 'a').replace(/[ĕē]/g, 'e').replace(/[ĭī]/g, 'i')
+        .replace(/[ŏō]/g, 'o').replace(/[ŭū]/g, 'u').replace(/\s+/g, ' ');
+    }
+
+    function formatDuration(totalSeconds) {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function createInitialEx2State() {
+      return EX2_DATA.reduce((acc, item) => {
+        if (item.categoria === 'verbo') {
+          acc[item.id] = { modo: '', tempo: '', diatesi: '', persona: '', paradigma: ['', '', '', '', ''], traduzione: '' };
+        } else if (item.categoria === 'congiunzione') {
+          acc[item.id] = { tipoCong: '', traduzione: '' };
+        } else if (item.categoria === 'nome') {
+          acc[item.id] = { caso: '', genere: '', numero: '', traduzione: '' };
+        } else {
+          acc[item.id] = { traduzione: '' };
+        }
+        return acc;
+      }, {});
+    }
+
+    function createInitialEx5State() {
+      return EX5_DATA.tokens.reduce((acc, tok) => {
+        acc[tok.id] = '';
+        return acc;
+      }, {});
+    }
+
+    function App() {
+      const [studentName, setStudentName] = useState('');
+      const [studentSurname, setStudentSurname] = useState('');
+      const [quizStarted, setQuizStarted] = useState(false);
+      const [nameError, setNameError] = useState('');
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [submittedSuccess, setSubmittedSuccess] = useState(false);
+      const [submitError, setSubmitError] = useState('');
+
+      const [activeTab, setActiveTab] = useState('ex1');
+      const [elapsedSeconds, setElapsedSeconds] = useState(0);
+      const [timerRunning, setTimerRunning] = useState(false);
+      const [showAdPopup, setShowAdPopup] = useState(false);
+      const [adShownOnce, setAdShownOnce] = useState(false);
+
+      const [ex1Inputs, setEx1Inputs] = useState({
+        legatus: Array(6).fill({ sing: '', plur: '' }),
+        virus: Array(6).fill({ sing: '', plur: '' })
+      });
+      const [ex1Checked, setEx1Checked] = useState(false);
+      const [ex2Inputs, setEx2Inputs] = useState(createInitialEx2State);
+      const [ex2Checked, setEx2Checked] = useState(false);
+      const [ex3Inputs, setEx3Inputs] = useState(EX3_DATA.reduce((acc, item) => { acc[item.id] = ''; return acc; }, {}));
+      const [ex3Checked, setEx3Checked] = useState(false);
+      const [ex4Inputs, setEx4Inputs] = useState(EX4_DATA.reduce((acc, verbo) => { acc[verbo.id] = verbo.tempi.map(() => ({ latino: '', traduzione: '' })); return acc; }, {}));
+      const [ex4Checked, setEx4Checked] = useState(false);
+      const [ex5Selections, setEx5Selections] = useState(createInitialEx5State);
+      const [ex5Checked, setEx5Checked] = useState(false);
+      const [ex6Inputs, setEx6Inputs] = useState(EX6_DATA.reduce((acc, item) => { acc[item.id] = { fenomeno: '', prefisso: '', verboBase: '', composto: '', spiegazione: '' }; return acc; }, {}));
+      const [ex6Checked, setEx6Checked] = useState(false);
+
+      const handleStartQuiz = (e) => {
+        e.preventDefault();
+        if (!studentName.trim() || !studentSurname.trim()) {
+          setNameError('Inserisci sia il Nome che il Cognome per iniziare la verifica.');
+          return;
+        }
+        setNameError('');
+        setQuizStarted(true);
+        setTimerRunning(true);
+      };
+
+      useEffect(() => {
+        if (!timerRunning) return;
+        const interval = setInterval(() => {
+          setElapsedSeconds((prev) => {
+            const next = prev + 1;
+            if (next === 180 && !adShownOnce) {
+              setShowAdPopup(true);
+              setAdShownOnce(true);
+            }
+            return next;
+          });
+        }, 1000);
+        return () => clearInterval(interval);
+      }, [timerRunning, adShownOnce]);
+
+      const checkEx1Field = (nounKey, rowIndex, numKey) => {
+        const userVal = normalizeLatinStrict(ex1Inputs[nounKey][rowIndex][numKey]);
+        const expected = normalizeLatinStrict(EX1_DATA[nounKey].rows[rowIndex][numKey]);
+        return userVal !== '' && userVal === expected;
+      };
+
+      const checkEx2Item = (item) => {
+        const u = ex2Inputs[item.id] || {};
+        const userTrad = normalizeStr(u.traduzione || '');
+        const tradOk = userTrad.length > 0 && item.acceptedTraduzioni.some((t) => normalizeStr(t) === userTrad);
+
+        if (item.categoria === 'verbo') {
+          const modoOk = u.modo === item.modo;
+          const tempoOk = u.tempo === item.tempo;
+          const diatesiOk = u.diatesi === item.diatesi;
+          const personaOk = u.persona === item.persona;
+          const analisiOk = modoOk && tempoOk && diatesiOk && personaOk;
+          const paradigmaChecks = item.paradigma.map((expectedForm, pIdx) => {
+            const userForm = normalizeLatinStrict((u.paradigma && u.paradigma[pIdx]) || '');
+            if (pIdx === 3 && item.supinoAssente) {
+              return ['', '-', '—', '--', 'manca', 'assente', 'no'].includes(userForm);
+            }
+            return userForm !== '' && userForm === normalizeLatinStrict(expectedForm);
+          });
+          return { modoOk, tempoOk, diatesiOk, personaOk, analisiOk, paradigmaChecks, paradigmaOk: paradigmaChecks.every(Boolean), tradOk };
+        }
+        if (item.categoria === 'congiunzione') {
+          const tipoCongOk = u.tipoCong === item.tipoCong;
+          return { tipoCongOk, analisiOk: tipoCongOk, tradOk };
+        }
+        if (item.categoria === 'nome') {
+          const casoOk = u.caso === item.caso;
+          const genereOk = u.genere === item.genere;
+          const numeroOk = u.numero === item.numero;
+          return { casoOk, genereOk, numeroOk, analisiOk: casoOk && genereOk && numeroOk, tradOk };
+        }
+        return { analisiOk: true, tradOk };
+      };
+
+      const checkEx3Item = (item) => {
+        const userVal = normalizeLatinStrict(ex3Inputs[item.id] || '');
+        return userVal !== '' && item.accepted.some((a) => normalizeLatinStrict(a) === userVal);
+      };
+
+      const checkEx4Cell = (verbo, tIdx) => {
+        const userLat = normalizeLatinStrict(ex4Inputs[verbo.id][tIdx]?.latino || '');
+        const userTrad = normalizeStr(ex4Inputs[verbo.id][tIdx]?.traduzione || '');
+        const tempoObj = verbo.tempi[tIdx];
+        const latOk = userLat !== '' && tempoObj.acceptedLatino.some((a) => normalizeLatinStrict(a) === userLat);
+        const tradOk = userTrad !== '' && tempoObj.acceptedTraduzione.some((a) => normalizeStr(a) === userTrad);
+        return { latOk, tradOk };
+      };
+
+      const checkEx5Token = (tok) => {
+        const chosen = ex5Selections[tok.id] || '';
+        return chosen !== '' && chosen === tok.correct;
+      };
+
+      const checkEx6Item = (item) => {
+        const u = ex6Inputs[item.id];
+        return {
+          fenOk: item.acceptedFenomeno.includes(normalizeStr(u.fenomeno)),
+          prefOk: normalizeLatinStrict(u.prefisso) === normalizeLatinStrict(item.prefisso),
+          baseOk: normalizeLatinStrict(u.verboBase) === normalizeLatinStrict(item.verboBase),
+          compOk: normalizeLatinStrict(u.composto) === normalizeLatinStrict(item.composto)
+        };
+      };
+
+      const scores = useMemo(() => {
+        let ex1Correct = 0;
+        ['legatus', 'virus'].forEach((n) => {
+          for (let i = 0; i < 6; i++) {
+            if (checkEx1Field(n, i, 'sing')) ex1Correct++;
+            if (checkEx1Field(n, i, 'plur')) ex1Correct++;
+          }
+        });
+
+        let ex2Correct = 0, ex2Max = 0;
+        EX2_DATA.forEach((item) => {
+          const res = checkEx2Item(item);
+          if (item.categoria === 'verbo') {
+            ex2Max += 10;
+            if (res.modoOk) ex2Correct++;
+            if (res.tempoOk) ex2Correct++;
+            if (res.diatesiOk) ex2Correct++;
+            if (res.personaOk) ex2Correct++;
+            res.paradigmaChecks.forEach((ok) => { if (ok) ex2Correct++; });
+            if (res.tradOk) ex2Correct++;
+          } else if (item.categoria === 'congiunzione') {
+            ex2Max += 2;
+            if (res.tipoCongOk) ex2Correct++;
+            if (res.tradOk) ex2Correct++;
+          } else if (item.categoria === 'nome') {
+            ex2Max += 4;
+            if (res.casoOk) ex2Correct++;
+            if (res.genereOk) ex2Correct++;
+            if (res.numeroOk) ex2Correct++;
+            if (res.tradOk) ex2Correct++;
+          } else {
+            ex2Max += 1;
+            if (res.tradOk) ex2Correct++;
+          }
+        });
+
+        let ex3Correct = 0;
+        EX3_DATA.forEach((item) => { if (checkEx3Item(item)) ex3Correct++; });
+
+        let ex4Correct = 0;
+        EX4_DATA.forEach((v) => {
+          v.tempi.forEach((_, idx) => {
+            const { latOk, tradOk } = checkEx4Cell(v, idx);
+            if (latOk) ex4Correct++;
+            if (tradOk) ex4Correct++;
+          });
+        });
+
+        let ex5Correct = 0;
+        EX5_DATA.tokens.forEach((tok) => { if (checkEx5Token(tok)) ex5Correct++; });
+        const ex5Max = EX5_DATA.tokens.length;
+
+        let ex6Correct = 0;
+        EX6_DATA.forEach((item) => {
+          const { fenOk, prefOk, baseOk, compOk } = checkEx6Item(item);
+          if (fenOk) ex6Correct++;
+          if (prefOk) ex6Correct++;
+          if (baseOk) ex6Correct++;
+          if (compOk) ex6Correct++;
+        });
+
+        const totalCorrect = ex1Correct + ex2Correct + ex3Correct + ex4Correct + ex5Correct + ex6Correct;
+        const totalMax = 24 + ex2Max + 10 + 18 + ex5Max + 12;
+
+        return {
+          ex1: { correct: ex1Correct, max: 24 },
+          ex2: { correct: ex2Correct, max: ex2Max },
+          ex3: { correct: ex3Correct, max: 10 },
+          ex4: { correct: ex4Correct, max: 18 },
+          ex5: { correct: ex5Correct, max: ex5Max },
+          ex6: { correct: ex6Correct, max: 12 },
+          totalCorrect,
+          totalMax,
+          percent: Math.round((totalCorrect / totalMax) * 100)
+        };
+      }, [ex1Inputs, ex2Inputs, ex3Inputs, ex4Inputs, ex5Selections, ex6Inputs]);
+
+      const handleFinalSubmit = async () => {
+        const conferma = window.confirm(
+          `Vuoi consegnare definitivamente la verifica a nome di ${studentName.trim()} ${studentSurname.trim()}?\n\nVerranno corretti tutti gli esercizi e il punteggio sarà registrato.`
+        );
+        if (!conferma) return;
+
+        setEx1Checked(true);
+        setEx2Checked(true);
+        setEx3Checked(true);
+        setEx4Checked(true);
+        setEx5Checked(true);
+        setEx6Checked(true);
+        setTimerRunning(false);
+        setIsSubmitting(true);
+        setSubmitError('');
+
+        const payload = {
+          nome: studentName.trim(),
+          cognome: studentSurname.trim(),
+          punteggio: `${scores.totalCorrect} / ${scores.totalMax}`,
+          percentuale: `${scores.percent}%`,
+          tempo: formatDuration(elapsedSeconds)
+        };
+
+        try {
+          await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          setSubmittedSuccess(true);
+        } catch (err) {
+          setSubmitError('Si è verificato un problema durante l’invio. Riprova tra qualche secondo.');
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      const handleEx1Change = (nounKey, rowIdx, numKey, val) => {
+        setEx1Inputs((prev) => ({
+          ...prev,
+          [nounKey]: prev[nounKey].map((row, idx) => (idx === rowIdx ? { ...row, [numKey]: val } : row))
+        }));
+      };
+
+      const resetEx1 = () => { setEx1Inputs({ legatus: Array(6).fill({ sing: '', plur: '' }), virus: Array(6).fill({ sing: '', plur: '' }) }); setEx1Checked(false); };
+      const resetEx2 = () => { setEx2Inputs(createInitialEx2State()); setEx2Checked(false); };
+      const resetEx3 = () => { const empty = {}; EX3_DATA.forEach((item) => { empty[item.id] = ''; }); setEx3Inputs(empty); setEx3Checked(false); };
+      const resetEx4 = () => { const empty = {}; EX4_DATA.forEach((v) => { empty[v.id] = v.tempi.map(() => ({ latino: '', traduzione: '' })); }); setEx4Inputs(empty); setEx4Checked(false); };
+      const resetEx5 = () => { setEx5Selections(createInitialEx5State()); setEx5Checked(false); };
+      const resetEx6 = () => { const empty = {}; EX6_DATA.forEach((item) => { empty[item.id] = { fenomeno: '', prefisso: '', verboBase: '', composto: '', spiegazione: '' }; }); setEx6Inputs(empty); setEx6Checked(false); };
+
+      const TABS = [
+        { id: 'ex1', label: 'Es. 1', title: 'Declinazioni', score: scores.ex1, checked: ex1Checked },
+        { id: 'ex2', label: 'Es. 2', title: 'Analisi & Trad.', score: scores.ex2, checked: ex2Checked },
+        { id: 'ex3', label: 'Es. 3', title: 'Italiano → Latino', score: scores.ex3, checked: ex3Checked },
+        { id: 'ex4', label: 'Es. 4', title: 'Tempi Indicativo', score: scores.ex4, checked: ex4Checked },
+        { id: 'ex5', label: 'Es. 5', title: 'Versione', score: scores.ex5, checked: ex5Checked },
+        { id: 'ex6', label: 'Es. 6', title: 'Verbi Composti', score: scores.ex6, checked: ex6Checked }
+      ];
+
+      const currentTabIndex = TABS.findIndex((t) => t.id === activeTab);
+      const goNextTab = () => { if (currentTabIndex < TABS.length - 1) setActiveTab(TABS[currentTabIndex + 1].id); };
+      const goPrevTab = () => { if (currentTabIndex > 0) setActiveTab(TABS[currentTabIndex - 1].id); };
+
+      if (!quizStarted) {
+        return (
+          <div className="min-h-screen bg-[#FAF8F5] text-stone-800 flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-stone-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-[#6E1D29] via-[#8B2635] to-[#74202D] text-amber-50 p-6 border-b-4 border-[#B4833E]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-amber-50/10 rounded-xl border border-amber-200/25">
+                    <Icon name="scroll-text" className="w-6 h-6 text-amber-200" />
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-widest text-amber-200/90 font-semibold">
+                      Lingua Latina • Verifica Interattiva
+                    </div>
+                    <h1 className="text-xl font-serif font-bold text-white">
+                      Esercitazione Completa di Latino
+                    </h1>
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleStartQuiz} className="p-6 space-y-4">
+                <p className="text-sm text-stone-600 leading-relaxed">
+                  Inserisci i tuoi dati per iniziare la verifica. Al termine potrai inviare il risultato finale al docente.
+                </p>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">Nome *</label>
+                  <input
+                    type="text"
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    placeholder="Es. Marco"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm font-medium outline-none focus:border-[#8B2635] focus:ring-2 focus:ring-[#8B2635]/15"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">Cognome *</label>
+                  <input
+                    type="text"
+                    value={studentSurname}
+                    onChange={(e) => setStudentSurname(e.target.value)}
+                    placeholder="Es. Rossi"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm font-medium outline-none focus:border-[#8B2635] focus:ring-2 focus:ring-[#8B2635]/15"
+                  />
+                </div>
+
+                {nameError && (
+                  <div className="text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-2 rounded-lg">
+                    {nameError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-xl bg-[#8B2635] hover:bg-[#741F2B] text-white text-sm font-semibold shadow-sm transition flex items-center justify-center gap-2 mt-2"
+                >
+                  <span>Inizia la verifica</span>
+                  <Icon name="chevron-right" className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen bg-[#FAF8F5] text-stone-800 font-sans selection:bg-[#8B2635]/15 selection:text-[#8B2635]">
+          {showAdPopup && (
+            <div className="pop-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-3 sm:p-4" onClick={() => setShowAdPopup(false)}>
+              <div onClick={(e) => e.stopPropagation()} className="pop-card relative max-w-2xl w-full max-h-[92dvh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-amber-400">
+                <div className="shrink-0 bg-stone-900 text-amber-200 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
+                  <span className="truncate">Messaggio promozionale • Pausa di studio</span>
+                  <button
+                    onClick={() => setShowAdPopup(false)}
+                    aria-label="Chiudi"
+                    className="shrink-0 inline-flex items-center gap-1 px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg bg-white/15 hover:bg-white/25 active:bg-white/30 text-white transition"
+                  >
+                    <span>Chiudi</span>
+                    <Icon name="x" className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="relative bg-blue-950 flex-1 min-h-0 overflow-y-auto flex items-center justify-center">
+                  <img
+                    src="Ciao, sono Enrico Papi!.png"
+                    alt="Ciao, sono Enrico Papi, vuoi sapere quanto vale il tuo libro di latino?"
+                    className="w-full h-auto max-h-[60dvh] sm:max-h-[70vh] object-contain mx-auto block"
+                  />
+                </div>
+                <div className="shrink-0 safe-bottom px-4 pt-3 sm:p-4 bg-[#FAF8F5] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-stone-200">
+                  <p className="text-xs sm:text-sm text-stone-700 font-medium text-center sm:text-left">
+                    Hai già completato 3 minuti di verifica! Continua con gli esercizi di latino.
+                  </p>
+                  <button
+                    onClick={() => setShowAdPopup(false)}
+                    className="w-full sm:w-auto min-h-[46px] px-5 py-2.5 rounded-xl bg-[#8B2635] hover:bg-[#741F2B] active:bg-[#741F2B] text-white text-sm font-semibold shadow-sm transition shrink-0"
+                  >
+                    Torna alla verifica
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* HEADER */}
+          <header className="bg-gradient-to-r from-[#6E1D29] via-[#8B2635] to-[#74202D] text-amber-50 shadow-md border-b-4 border-[#B4833E]">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="p-3 bg-amber-50/10 rounded-xl border border-amber-200/25 shrink-0">
+                    <Icon name="scroll-text" className="w-7 h-7 text-amber-200" />
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest text-amber-200/90 font-semibold">
+                      <span>Lingua Latina • Verifica Interattiva</span>
+                      <span className="bg-white/15 text-white px-2 py-0.5 rounded normal-case tracking-normal flex items-center gap-1">
+                        <Icon name="user-check" className="w-3.5 h-3.5 text-amber-300" />
+                        {studentName} {studentSurname}
+                      </span>
+                    </div>
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold tracking-tight text-white mt-0.5">
+                      Esercitazione Completa di Latino
+                    </h1>
+                    <p className="text-xs sm:text-sm text-amber-100/85 mt-1">
+                      Declinazioni, analisi grammaticale, forme verbali, traduzione e fonetica dei verbi composti
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="bg-black/25 backdrop-blur-sm rounded-xl px-3.5 py-2.5 border border-amber-200/20 flex items-center gap-2.5">
+                    <Icon name="clock" className="w-4 h-4 text-amber-300" />
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-amber-200/80 font-semibold">Tempo trascorso</div>
+                      <div className="font-mono font-bold text-base text-white leading-tight">{formatDuration(elapsedSeconds)}</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-black/25 backdrop-blur-sm rounded-xl p-3 border border-amber-200/20 min-w-[190px]">
+                    <div className="flex items-center justify-between text-xs font-medium text-amber-100 mb-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <Icon name="award" className="w-4 h-4 text-amber-300" />
+                        Punteggio
+                      </span>
+                      <span className="font-bold text-white">{scores.totalCorrect} / {scores.totalMax} ({scores.percent}%)</span>
+                    </div>
+                    <div className="w-full h-2 bg-black/30 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-amber-400 to-emerald-400 transition-all duration-500 rounded-full" style={{ width: `${scores.percent}%` }} />
+                    </div>
+                  </div>
+
+                  {!submittedSuccess ? (
+                    <button
+                      onClick={handleFinalSubmit}
+                      disabled={isSubmitting}
+                      className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-md transition disabled:opacity-60"
+                    >
+                      <Icon name="send" className="w-4 h-4" />
+                      <span>{isSubmitting ? 'Invio...' : 'Consegna verifica'}</span>
+                    </button>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-emerald-900/80 border border-emerald-400/50 text-emerald-100 text-xs font-bold">
+                      <Icon name="check-circle-2" className="w-4 h-4 text-emerald-300" />
+                      <span>Risultato registrato!</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {submittedSuccess && (
+                <div className="mt-4 rounded-xl bg-emerald-900/70 border border-emerald-400/40 px-4 py-3 text-xs sm:text-sm text-emerald-50">
+                  Ottimo lavoro, <strong>{studentName} {studentSurname}</strong>! Il tuo punteggio finale di{' '}
+                  <strong>{scores.totalCorrect}/{scores.totalMax} ({scores.percent}%)</strong> in{' '}
+                  <strong>{formatDuration(elapsedSeconds)}</strong> è stato inviato al docente. Puoi ora rivedere le correzioni in ogni scheda.
+                </div>
+              )}
+
+              {submitError && (
+                <div className="mt-4 rounded-xl bg-rose-900/80 border border-rose-400/40 px-4 py-3 text-xs sm:text-sm text-rose-100">
+                  {submitError}
+                </div>
+              )}
+            </div>
+          </header>
+
+          {/* NAVIGAZIONE A SCHEDE */}
+          <nav className="sticky top-0 z-20 bg-[#F4EFE6]/95 backdrop-blur-md border-b border-stone-200 shadow-sm">
+            <div className="max-w-6xl mx-auto px-3 sm:px-6">
+              <div className="flex items-center gap-1.5 py-2.5 overflow-x-auto no-scrollbar">
+                {TABS.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  const isComplete = tab.checked && tab.score && tab.score.correct === tab.score.max;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                        isActive ? 'bg-[#8B2635] text-white shadow-sm' : 'bg-white/80 text-stone-700 hover:bg-white hover:text-[#8B2635] border border-stone-200/80'
+                      }`}
+                    >
+                      <span className="font-bold">{tab.label}</span>
+                      <span className={`hidden sm:inline text-xs ${isActive ? 'text-amber-100' : 'text-stone-500'}`}>{tab.title}</span>
+                      {tab.score && tab.checked && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${isActive ? 'bg-white/20 text-white' : isComplete ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-100 text-stone-600'}`}>
+                          {tab.score.correct}/{tab.score.max}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </nav>
+
+          {/* CONTENUTO PRINCIPALE */}
+          <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+            {/* ESERCIZIO 1 */}
+            {activeTab === 'ex1' && (
+              <section className="space-y-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+                    <div>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B2635] bg-[#8B2635]/10 px-2.5 py-1 rounded-md">Esercizio 1</span>
+                      <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-1.5">
+                        Declina per intero <span className="text-[#8B2635]">LEGATUS, I</span> e <span className="text-[#8B2635]">VIRUS, I</span>
+                      </h2>
+                      <p className="text-sm text-stone-600 mt-1">Completa tutti i casi al singolare e al plurale per entrambi i sostantivi della II declinazione.</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button onClick={() => setEx1Checked(true)} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B2635] hover:bg-[#741F2B] text-white text-sm font-semibold shadow-sm transition">
+                        <Icon name="check-circle-2" className="w-4 h-4" /> Verifica
+                      </button>
+                      <button onClick={resetEx1} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium transition">
+                        <Icon name="rotate-ccw" className="w-4 h-4" /> Azzera
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    {(['legatus', 'virus']).map((nounKey) => {
+                      const noun = EX1_DATA[nounKey];
+                      return (
+                        <div key={nounKey} className="rounded-xl border border-stone-200 bg-[#FAF8F5] overflow-hidden shadow-xs">
+                          <div className="bg-stone-800 text-white px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <h3 className="font-serif font-bold text-lg text-amber-200">{noun.lemma}</h3>
+                              <p className="text-xs text-stone-300">{noun.info}</p>
+                            </div>
+                            <span className="text-xs bg-white/10 px-2.5 py-1 rounded-md text-amber-100">Significato: <strong>{noun.significato}</strong></span>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="bg-stone-200/70 text-stone-700 border-b border-stone-200">
+                                  <th className="py-2.5 px-3 text-left font-semibold w-1/3">Caso</th>
+                                  <th className="py-2.5 px-3 text-left font-semibold w-1/3">Singolare</th>
+                                  <th className="py-2.5 px-3 text-left font-semibold w-1/3">Plurale</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-stone-200/80 bg-white">
+                                {noun.rows.map((row, idx) => {
+                                  const singOk = checkEx1Field(nounKey, idx, 'sing');
+                                  const plurOk = checkEx1Field(nounKey, idx, 'plur');
+                                  return (
+                                    <tr key={row.caso} className="hover:bg-stone-50/80">
+                                      <td className="py-2.5 px-3 font-medium text-stone-700">{row.caso}</td>
+                                      <td className="py-2 px-2.5">
+                                        <input
+                                          type="text"
+                                          value={ex1Inputs[nounKey][idx].sing}
+                                          onChange={(e) => handleEx1Change(nounKey, idx, 'sing', e.target.value)}
+                                          className={`w-full px-2.5 py-1.5 rounded-lg border text-sm font-medium outline-none transition ${!ex1Checked ? 'border-stone-300 focus:border-[#8B2635]' : singOk ? 'border-emerald-500 bg-emerald-50/70 text-emerald-900' : 'border-rose-400 bg-rose-50/70 text-rose-900'}`}
+                                        />
+                                        {ex1Checked && !singOk && <div className="text-[11px] font-semibold text-rose-700 mt-0.5">Corretto: <span className="underline">{row.sing}</span></div>}
+                                      </td>
+                                      <td className="py-2 px-2.5">
+                                        <input
+                                          type="text"
+                                          value={ex1Inputs[nounKey][idx].plur}
+                                          onChange={(e) => handleEx1Change(nounKey, idx, 'plur', e.target.value)}
+                                          className={`w-full px-2.5 py-1.5 rounded-lg border text-sm font-medium outline-none transition ${!ex1Checked ? 'border-stone-300 focus:border-[#8B2635]' : plurOk ? 'border-emerald-500 bg-emerald-50/70 text-emerald-900' : 'border-rose-400 bg-rose-50/70 text-rose-900'}`}
+                                        />
+                                        {ex1Checked && !plurOk && <div className="text-[11px] font-semibold text-rose-700 mt-0.5">Corretto: <span className="underline">{row.plur}</span></div>}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {ex1Checked && (
+                    <div className="mt-6 rounded-xl bg-amber-50/90 border border-amber-300/80 p-4 flex items-start gap-3">
+                      <Icon name="info" className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                      <div className="text-sm text-amber-950"><strong className="font-semibold">Nota grammaticale sui neutri:</strong> {EX1_DATA.nota}</div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* ESERCIZIO 2 */}
+            {activeTab === 'ex2' && (
+              <section className="space-y-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+                    <div>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B2635] bg-[#8B2635]/10 px-2.5 py-1 rounded-md">Esercizio 2</span>
+                      <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-1.5">Analizza e traduci le seguenti parole</h2>
+                      <p className="text-xs sm:text-sm text-stone-600 mt-1 leading-relaxed">Completa l’analisi grammaticale tramite i menu a tendina, compila le 5 voci del paradigma per i verbi e inserisci la traduzione italiana.</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button onClick={() => setEx2Checked(true)} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B2635] hover:bg-[#741F2B] text-white text-sm font-semibold shadow-sm transition">
+                        <Icon name="check-circle-2" className="w-4 h-4" /> Verifica
+                      </button>
+                      <button onClick={resetEx2} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium transition">
+                        <Icon name="rotate-ccw" className="w-4 h-4" /> Azzera
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 space-y-5">
+                    {EX2_DATA.map((item, idx) => {
+                      const res = checkEx2Item(item);
+                      const u = ex2Inputs[item.id] || {};
+                      return (
+                        <div key={item.id} className="rounded-xl border border-stone-200 bg-[#FAF8F5] p-4 sm:p-5">
+                          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-stone-200/80">
+                            <div className="flex items-center gap-3">
+                              <span className="w-7 h-7 rounded-full bg-[#8B2635] text-white text-xs font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
+                              <span className="font-serif text-xl sm:text-2xl font-bold text-stone-900 tracking-wide">{item.parola}</span>
+                              <span className="text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-stone-200/80 text-stone-700 font-bold">{item.categoria}</span>
+                            </div>
+                          </div>
+
+                          {item.categoria === 'verbo' && (
+                            <div className="mt-4 space-y-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                {[
+                                  { label: 'Modo', key: 'modo', opts: MODI_OPTIONS, ok: res.modoOk },
+                                  { label: 'Tempo', key: 'tempo', opts: TEMPI_OPTIONS, ok: res.tempoOk },
+                                  { label: 'Diatesi', key: 'diatesi', opts: DIATESI_OPTIONS, ok: res.diatesiOk },
+                                  { label: 'Persona', key: 'persona', opts: PERSONE_OPTIONS, ok: res.personaOk }
+                                ].map((f) => (
+                                  <div key={f.key}>
+                                    <label className="block text-xs font-semibold text-stone-600 mb-1">{f.label}</label>
+                                    <select
+                                      value={u[f.key] || ''}
+                                      onChange={(e) => setEx2Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], [f.key]: e.target.value } }))}
+                                      className={`w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white outline-none ${!ex2Checked ? 'border-stone-300' : f.ok ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                                    >
+                                      <option value="">Seleziona...</option>
+                                      {f.opts.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div>
+                                <div className="flex flex-wrap items-center justify-between gap-1 mb-2">
+                                  <span className="text-xs font-bold uppercase tracking-wider text-stone-500">Paradigma (5 voci)</span>
+                                  {item.supinoAssente && <span className="text-[11px] text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded font-medium">Nota: privo di supino (inserisci «—» o «-»)</span>}
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+                                  {PARADIGMA_LABELS.map((pField) => (
+                                    <div key={pField.idx}>
+                                      <label className="block text-[11px] font-semibold text-stone-600 mb-1">{pField.label}</label>
+                                      <input
+                                        type="text"
+                                        value={(u.paradigma && u.paradigma[pField.idx]) || ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setEx2Inputs((prev) => {
+                                            const oldArr = prev[item.id].paradigma || ['', '', '', '', ''];
+                                            return { ...prev, [item.id]: { ...prev[item.id], paradigma: oldArr.map((v, i) => (i === pField.idx ? val : v)) } };
+                                          });
+                                        }}
+                                        className={`w-full px-2.5 py-2 rounded-lg border text-sm font-serif font-semibold bg-white outline-none ${!ex2Checked ? 'border-stone-300' : res.paradigmaChecks[pField.idx] ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">Traduzione italiana</label>
+                                <input
+                                  type="text"
+                                  value={u.traduzione || ''}
+                                  onChange={(e) => setEx2Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], traduzione: e.target.value } }))}
+                                  className={`w-full sm:max-w-md px-3 py-2 rounded-lg border text-sm font-medium bg-white outline-none ${!ex2Checked ? 'border-stone-300' : res.tradOk ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {item.categoria === 'avverbio' && (
+                            <div className="mt-4">
+                              <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">Traduzione italiana</label>
+                              <input
+                                type="text"
+                                value={u.traduzione || ''}
+                                onChange={(e) => setEx2Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], traduzione: e.target.value } }))}
+                                className={`w-full sm:max-w-md px-3 py-2 rounded-lg border text-sm font-medium bg-white outline-none ${!ex2Checked ? 'border-stone-300' : res.tradOk ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                              />
+                            </div>
+                          )}
+
+                          {item.categoria === 'congiunzione' && (
+                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">Tipologia</label>
+                                <select
+                                  value={u.tipoCong || ''}
+                                  onChange={(e) => setEx2Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], tipoCong: e.target.value } }))}
+                                  className={`w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white outline-none ${!ex2Checked ? 'border-stone-300' : res.tipoCongOk ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                                >
+                                  <option value="">Seleziona...</option>
+                                  {CONG_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">Traduzione italiana</label>
+                                <input
+                                  type="text"
+                                  value={u.traduzione || ''}
+                                  onChange={(e) => setEx2Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], traduzione: e.target.value } }))}
+                                  className={`w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white outline-none ${!ex2Checked ? 'border-stone-300' : res.tradOk ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {item.categoria === 'nome' && (
+                            <div className="mt-4 space-y-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {[
+                                  { label: 'Caso', key: 'caso', opts: CASI, ok: res.casoOk },
+                                  { label: 'Genere', key: 'genere', opts: GENERE_OPTIONS, ok: res.genereOk },
+                                  { label: 'Numero', key: 'numero', opts: NUMERO_OPTIONS, ok: res.numeroOk }
+                                ].map((f) => (
+                                  <div key={f.key}>
+                                    <label className="block text-xs font-semibold text-stone-600 mb-1">{f.label}</label>
+                                    <select
+                                      value={u[f.key] || ''}
+                                      onChange={(e) => setEx2Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], [f.key]: e.target.value } }))}
+                                      className={`w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white outline-none ${!ex2Checked ? 'border-stone-300' : f.ok ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                                    >
+                                      <option value="">Seleziona...</option>
+                                      {f.opts.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
+                                  </div>
+                                ))}
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">Traduzione italiana</label>
+                                <input
+                                  type="text"
+                                  value={u.traduzione || ''}
+                                  onChange={(e) => setEx2Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], traduzione: e.target.value } }))}
+                                  className={`w-full sm:max-w-md px-3 py-2 rounded-lg border text-sm font-medium bg-white outline-none ${!ex2Checked ? 'border-stone-300' : res.tradOk ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {ex2Checked && (
+                            <div className="mt-4 rounded-lg bg-amber-50/90 border border-amber-200 px-3.5 py-2.5 text-xs text-stone-800 space-y-1">
+                              <div><strong className="text-[#8B2635]">Soluzione completa:</strong> {item.analisiSoluzione} → <strong>«{item.traduzioneSoluzione}»</strong></div>
+                              {item.notaExtra && <div className="text-amber-900 pt-1">{item.notaExtra}</div>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ESERCIZIO 3 */}
+            {activeTab === 'ex3' && (
+              <section className="space-y-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+                    <div>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B2635] bg-[#8B2635]/10 px-2.5 py-1 rounded-md">Esercizio 3</span>
+                      <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-1.5">Traduci in latino</h2>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button onClick={() => setEx3Checked(true)} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B2635] hover:bg-[#741F2B] text-white text-sm font-semibold shadow-sm transition">
+                        <Icon name="check-circle-2" className="w-4 h-4" /> Verifica
+                      </button>
+                      <button onClick={resetEx3} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium transition">
+                        <Icon name="rotate-ccw" className="w-4 h-4" /> Azzera
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                    {EX3_DATA.map((item, idx) => {
+                      const isOk = checkEx3Item(item);
+                      return (
+                        <div key={item.id} className="rounded-xl border border-stone-200 bg-[#FAF8F5] p-4 flex flex-col justify-between gap-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <span className="w-6 h-6 rounded-full bg-stone-800 text-amber-200 text-xs font-bold flex items-center justify-center">{idx + 1}</span>
+                              <span className="font-semibold text-base text-stone-900">{item.it}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <input
+                              type="text"
+                              value={ex3Inputs[item.id] || ''}
+                              onChange={(e) => setEx3Inputs((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                              className={`w-full px-3 py-2 rounded-lg border text-sm font-serif font-semibold bg-white outline-none ${!ex3Checked ? 'border-stone-300' : isOk ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                            />
+                            {ex3Checked && !isOk && <div className="mt-1.5 text-xs text-rose-700 font-medium">Soluzione: <strong className="font-serif text-sm">{item.la}</strong></div>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ESERCIZIO 4 */}
+            {activeTab === 'ex4' && (
+              <section className="space-y-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+                    <div>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B2635] bg-[#8B2635]/10 px-2.5 py-1 rounded-md">Esercizio 4</span>
+                      <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-1.5">Traduci e trasforma in tutti i tempi dell’indicativo studiati</h2>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button onClick={() => setEx4Checked(true)} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B2635] hover:bg-[#741F2B] text-white text-sm font-semibold shadow-sm transition">
+                        <Icon name="check-circle-2" className="w-4 h-4" /> Verifica
+                      </button>
+                      <button onClick={resetEx4} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium transition">
+                        <Icon name="rotate-ccw" className="w-4 h-4" /> Azzera
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-6 space-y-6">
+                    {EX4_DATA.map((verbo) => (
+                      <div key={verbo.id} className="rounded-xl border border-stone-200 bg-[#FAF8F5] overflow-hidden">
+                        <div className="bg-stone-800 text-white px-4 py-3">
+                          <h3 className="font-bold text-base sm:text-lg text-amber-200">{verbo.titolo}</h3>
+                          <p className="text-xs text-stone-300 mt-0.5 italic">{verbo.paradigma}</p>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-stone-200/70 text-stone-700 border-b border-stone-200">
+                                <th className="py-2.5 px-4 text-left font-semibold w-1/4">Tempo</th>
+                                <th className="py-2.5 px-4 text-left font-semibold w-3/8">Forma latina</th>
+                                <th className="py-2.5 px-4 text-left font-semibold w-3/8">Traduzione</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-stone-200 bg-white">
+                              {verbo.tempi.map((tObj, tIdx) => {
+                                const { latOk, tradOk } = checkEx4Cell(verbo, tIdx);
+                                return (
+                                  <tr key={tObj.tempo}>
+                                    <td className="py-3 px-4 font-semibold text-stone-800">{tObj.tempo}</td>
+                                    <td className="py-2.5 px-4">
+                                      <input
+                                        type="text"
+                                        value={ex4Inputs[verbo.id][tIdx]?.latino || ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setEx4Inputs((prev) => ({ ...prev, [verbo.id]: prev[verbo.id].map((row, idx) => (idx === tIdx ? { ...row, latino: val } : row)) }));
+                                        }}
+                                        className={`w-full px-3 py-1.5 rounded-lg border text-sm font-serif font-semibold outline-none ${!ex4Checked ? 'border-stone-300' : latOk ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                                      />
+                                      {ex4Checked && !latOk && <div className="text-xs text-rose-700 font-medium mt-1">Corretto: <strong>{tObj.latinoDisplay}</strong></div>}
+                                    </td>
+                                    <td className="py-2.5 px-4">
+                                      <input
+                                        type="text"
+                                        value={ex4Inputs[verbo.id][tIdx]?.traduzione || ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setEx4Inputs((prev) => ({ ...prev, [verbo.id]: prev[verbo.id].map((row, idx) => (idx === tIdx ? { ...row, traduzione: val } : row)) }));
+                                        }}
+                                        className={`w-full px-3 py-1.5 rounded-lg border text-sm outline-none ${!ex4Checked ? 'border-stone-300' : tradOk ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                                      />
+                                      {ex4Checked && !tradOk && <div className="text-xs text-rose-700 font-medium mt-1">Corretto: <strong>{tObj.traduzione}</strong></div>}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                        {ex4Checked && verbo.nota && (
+                          <div className="bg-amber-50/90 border-t border-amber-200 px-4 py-3 text-xs text-amber-950">
+                            <strong>Attenzione alla quantità vocalica:</strong> {verbo.nota}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ESERCIZIO 5 */}
+            {activeTab === 'ex5' && (
+              <section className="space-y-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+                    <div>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B2635] bg-[#8B2635]/10 px-2.5 py-1 rounded-md">Esercizio 5</span>
+                      <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-1.5">Traduci in latino</h2>
+                    </div>
+                    <div className="grid grid-cols-[1fr_auto] sm:flex sm:flex-wrap items-center gap-2 shrink-0">
+                      <button onClick={() => setEx5Checked(true)} className="inline-flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2.5 rounded-xl bg-[#8B2635] hover:bg-[#741F2B] text-white text-sm font-semibold shadow-sm transition">
+                        <Icon name="check-circle-2" className="w-4 h-4" /> Verifica
+                      </button>
+                      <button onClick={resetEx5} className="inline-flex items-center justify-center gap-1.5 px-4 py-3 sm:px-3 sm:py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium transition">
+                        <Icon name="rotate-ccw" className="w-4 h-4" /> Azzera
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-6 rounded-xl bg-[#F4EFE6] border-l-4 border-[#8B2635] p-4 sm:p-5">
+                    <div className="text-xs font-bold uppercase tracking-wider text-[#8B2635] mb-1.5">Testo italiano da tradurre</div>
+                    <p className="font-serif text-base sm:text-lg text-stone-900 leading-relaxed">«{EX5_DATA.testoConsegna}»</p>
+                  </div>
+                  <div className="mt-6 rounded-2xl border border-stone-200 bg-[#FAF8F5] p-2.5 sm:p-6">
+                    <div className="grid grid-cols-1 gap-2.5 sm:flex sm:flex-wrap sm:items-end sm:gap-x-2.5 sm:gap-y-4">
+                      {EX5_DATA.tokens.map((tok, index) => {
+                        const isOk = checkEx5Token(tok);
+                        const chosen = ex5Selections[tok.id] || '';
+                        return (
+                          <div key={tok.id} className={`flex items-end gap-1 sm:inline-flex rounded-xl border p-3 sm:p-0 sm:border-0 sm:bg-transparent transition-colors ${!ex5Checked ? (chosen ? 'bg-white border-stone-300' : 'bg-white/70 border-stone-200') : isOk ? 'bg-emerald-50/60 border-emerald-300' : 'bg-rose-50/60 border-rose-300'}`}>
+                            <div className="flex flex-col flex-1 sm:flex-none min-w-0">
+                              <span className="text-xs sm:text-[11px] font-semibold sm:font-medium text-stone-500 mb-1.5 sm:mb-1 px-0.5 sm:px-1"><span className="inline-flex items-center justify-center w-5 h-5 mr-1.5 rounded-full bg-[#8B2635]/10 text-[#8B2635] text-[11px] font-bold sm:hidden">{index + 1}</span><span className="hidden sm:inline">{index + 1}. </span>{tok.gloss}</span>
+                              <select
+                                value={chosen}
+                                onChange={(e) => setEx5Selections((prev) => ({ ...prev, [tok.id]: e.target.value }))}
+                                className={`ex5-select w-full sm:w-auto min-h-[46px] sm:min-h-0 px-3 py-2.5 sm:py-2 rounded-xl border text-base font-serif font-bold bg-white outline-none cursor-pointer focus:ring-2 focus:ring-[#8B2635]/30 ${!ex5Checked ? 'border-stone-300' : isOk ? 'border-emerald-500 bg-emerald-50' : 'border-rose-400 bg-rose-50'}`}
+                              >
+                                <option value="">— scegli —</option>
+                                {tok.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                              </select>
+                              {ex5Checked && !isOk && <span className="text-xs sm:text-[11px] font-bold text-rose-700 mt-1 px-1">→ {tok.correct}</span>}
+                            </div>
+                            {tok.punctuationAfter && <span className="font-serif text-2xl font-bold text-stone-800 pb-1.5 pl-0.5">{tok.punctuationAfter}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {ex5Checked && (
+                    <div className="mt-6 rounded-xl bg-emerald-50/80 border border-emerald-300 p-4 sm:p-5">
+                      <div className="text-xs font-bold uppercase tracking-wider text-emerald-800 mb-1.5">Traduzione di riferimento</div>
+                      <p className="font-serif text-base sm:text-lg font-bold text-emerald-950 leading-relaxed">{EX5_DATA.traduzioneModello}</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* ESERCIZIO 6 */}
+            {activeTab === 'ex6' && (
+              <section className="space-y-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+                    <div>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B2635] bg-[#8B2635]/10 px-2.5 py-1 rounded-md">Esercizio 6</span>
+                      <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-1.5">I tre fenomeni fonetici dei verbi composti</h2>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button onClick={() => setEx6Checked(true)} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B2635] hover:bg-[#741F2B] text-white text-sm font-semibold shadow-sm transition">
+                        <Icon name="check-circle-2" className="w-4 h-4" /> Verifica
+                      </button>
+                      <button onClick={resetEx6} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium transition">
+                        <Icon name="rotate-ccw" className="w-4 h-4" /> Azzera
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+                    {EX6_DATA.map((item) => {
+                      const { fenOk, prefOk, baseOk, compOk } = checkEx6Item(item);
+                      const val = ex6Inputs[item.id];
+                      return (
+                        <div key={item.id} className="rounded-xl border border-stone-200 bg-[#FAF8F5] p-4 flex flex-col justify-between space-y-4">
+                          <div className="space-y-3">
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#8B2635] text-white text-xs font-bold">{item.numero}</span>
+                            <div>
+                              <label className="block text-xs font-semibold text-stone-600 mb-1">Nome del fenomeno fonetico</label>
+                              <input
+                                type="text"
+                                value={val.fenomeno}
+                                onChange={(e) => setEx6Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], fenomeno: e.target.value } }))}
+                                className={`w-full px-3 py-2 rounded-lg border text-sm font-semibold bg-white outline-none ${!ex6Checked ? 'border-stone-300' : fenOk ? 'border-emerald-500 bg-emerald-50/70' : 'border-rose-400 bg-rose-50/70'}`}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-stone-600 mb-1">Esempio (prefisso + verbo base → composto)</label>
+                              <div className="flex items-center gap-1.5">
+                                <input type="text" value={val.prefisso} onChange={(e) => setEx6Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], prefisso: e.target.value } }))} className={`w-1/4 px-2 py-1.5 rounded-lg border text-xs font-serif font-bold text-center bg-white ${!ex6Checked ? 'border-stone-300' : prefOk ? 'border-emerald-500 bg-emerald-50' : 'border-rose-400 bg-rose-50'}`} />
+                                <span className="text-stone-500 font-bold">+</span>
+                                <input type="text" value={val.verboBase} onChange={(e) => setEx6Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], verboBase: e.target.value } }))} className={`w-1/3 px-2 py-1.5 rounded-lg border text-xs font-serif font-bold text-center bg-white ${!ex6Checked ? 'border-stone-300' : baseOk ? 'border-emerald-500 bg-emerald-50' : 'border-rose-400 bg-rose-50'}`} />
+                                <span className="text-stone-500 font-bold">→</span>
+                                <input type="text" value={val.composto} onChange={(e) => setEx6Inputs((prev) => ({ ...prev, [item.id]: { ...prev[item.id], composto: e.target.value } }))} className={`w-5/12 px-2 py-1.5 rounded-lg border text-xs font-serif font-bold text-center bg-white ${!ex6Checked ? 'border-stone-300' : compOk ? 'border-emerald-500 bg-emerald-50' : 'border-rose-400 bg-rose-50'}`} />
+                              </div>
+                            </div>
+                          </div>
+                          {ex6Checked && (
+                            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-stone-800">
+                              <div className="font-bold text-[#8B2635]">{item.numero}. {item.fenomeno}</div>
+                              <div className="font-serif font-bold text-sm mt-0.5">{item.esempioCompleto}</div>
+                              <p className="text-stone-600 mt-1">{item.spiegazione}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* PULSANTI NAVIGAZIONE E CONSEGNA */}
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <button
+                onClick={goPrevTab}
+                disabled={currentTabIndex <= 0}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-stone-200 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-40"
+              >
+                <Icon name="chevron-left" className="w-4 h-4" /> Scheda precedente
+              </button>
+
+              {currentTabIndex < TABS.length - 1 ? (
+                <button
+                  onClick={goNextTab}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B2635] text-white text-sm font-medium hover:bg-[#741F2B]"
+                >
+                  Scheda successiva <Icon name="chevron-right" className="w-4 h-4" />
+                </button>
+              ) : (
+                !submittedSuccess && (
+                  <button
+                    onClick={handleFinalSubmit}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-sm transition"
+                  >
+                    <Icon name="send" className="w-4 h-4" />
+                    <span>{isSubmitting ? 'Invio...' : 'Consegna e invia punteggio'}</span>
+                  </button>
+                )
+              )}
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
